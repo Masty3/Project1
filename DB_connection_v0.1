@@ -1,0 +1,72 @@
+import psycopg2
+
+#Zum erzeugen des Popupfensters
+import tkinter as tk
+from tkinter import messagebox
+
+
+# Verbindung zur Datenbank herstellen
+conn = psycopg2.connect(database="master", user="postgres", password="test", host="localhost", port="5432")
+
+# Cursor-Objekt erstellen
+cur = conn.cursor()
+
+#Auslesen der Zeilen in der Datenbank bei Verbindungsaufbau
+cur.execute("SELECT COUNT(*) FROM test2")
+Nr_of_tables_start = cur.fetchone()[0]
+
+
+
+#Anzahl der Schleifendurchläuf später durch Anzahl der in der OCR gefundenen Datensätze austauschen
+j = 1
+
+i = 1
+while i <= j:
+    SQL_insert_data_to_table = "INSERT INTO test2(pk, testtext, testint) VALUES (nextval('test2_pk_seq'::regclass), 'testtext{}', {});".format(i,i,i)
+    cur.execute(SQL_insert_data_to_table)
+    i +=1
+    conn.commit()
+
+#Auslesen der Zeilen in der Datenbank nach dem Import
+cur.execute("SELECT COUNT(*) FROM test2")
+Nr_of_tables_end = cur.fetchone()[0]
+
+# Popup-Fenster erstellen
+root = tk.Tk()
+root.withdraw()
+
+if Nr_of_tables_end - Nr_of_tables_start == j:
+    messagebox.showinfo( "Info","Es wurden "+str(j)+" Datensätze eingelesen")
+elif Nr_of_tables_end == Nr_of_tables_start:
+    messagebox.showinfo("Achtung","Es wurden keine Datensätze eingelesen")
+else:
+    messagebox.showinfo("Schwerer Ausnahmefehler", "Nehmen sie Kontakt mit dem Administrator auf")
+
+#Abfrage der Zeilen nach Inputdata (später mit Eingabeaufforderung von Patientennmen/ID oder ähnlichem)
+
+inputdata = "657"
+SQL_get_Patient_by_Name = '''SELECT * FROM test2 WHERE testtext = '{}';'''.format(inputdata)
+cur.execute(SQL_get_Patient_by_Name)
+conn.commit()
+found_data = cur.fetchall()
+
+Output_list_for_messagebox = []
+
+if found_data:
+    for row in found_data:
+     print(str(row))
+     Output_list_for_messagebox.append(str(row))
+     
+else:
+    print("keine Daten gefunden")
+
+messagebox.showinfo('Gefundene Daten', Output_list_for_messagebox)
+
+# Fenster wieder schließen
+root.destroy()
+
+#Cursor schließen
+cur.close()
+
+#Verbindung zur Datenbank trennen
+conn.close()
